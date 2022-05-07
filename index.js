@@ -17,11 +17,26 @@ async function run() {
     try {
         await client.connect();
         const contactCollection = client.db('warehouse').collection('contact');
+        const inventoryCollection = client.db('warehouse').collection('inventory');
 
         // contact api
         app.post('/contact', async (req, res) => {
             const contact = req.body;
             const result = await contactCollection.insertOne(contact);
+            res.send(result);
+        })
+
+        // inventory api
+        app.get('/inventory', async (req, res) => {
+            const query = {};
+            const cursor = inventoryCollection.find(query);
+            const inventory = await cursor.toArray();
+            res.send(inventory);
+        })
+
+        app.post('/inventory', async (req, res) => {
+            const contact = req.body;
+            const result = await inventoryCollection.insertOne(contact);
             res.send(result);
         })
     }
