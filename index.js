@@ -67,6 +67,14 @@ async function run() {
             const result = await inventoryCollection.updateOne(filter, updatedDoc, options);
             res.send(result);
         })
+
+        app.get('/my-items', async (req, res) => {
+            const email = req.query.email;
+            const query = { email: email };
+            const cursor = inventoryCollection.find(query);
+            const myItems = await cursor.toArray();
+            res.send(myItems);
+        })
     }
     finally {
 
