@@ -10,6 +10,22 @@ const jwt = require('jsonwebtoken');
 app.use(cors());
 app.use(express.json());
 
+function verifyJWT(req, res, next) {
+    const authHeader = req.headers.authorization;
+    console.log(authHeader);
+    if (!authHeader) {
+        return res.status(401).send({ message: 'unauthorized access' });
+    }
+    const token = authHeader.split(' ')[1];
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+        if (err) {
+            return res.status(403).send({ message: 'Forbidden' })
+        }
+        console.log(decoded);
+        req.decoded = decoded;
+        next();
+    })
+}
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.y6qji.mongodb.net/myFirstDatabase?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
@@ -78,12 +94,18 @@ async function run() {
             res.send(result);
         })
 
-        app.get('/my-items', async (req, res) => {
+        app.get('/my-items', verifyJWT, async (req, res) => {
+            const decodedEmail = req.decoded?.email;
             const email = req.query.email;
-            const query = { email: email };
-            const cursor = inventoryCollection.find(query);
-            const myItems = await cursor.toArray();
-            res.send(myItems);
+            if (email === decodedEmail) {
+                const query = { email: email };
+                const cursor = inventoryCollection.find(query);
+                const myItems = await cursor.toArray();
+                res.send(myItems);
+            }
+            else {
+                return res.status(403).send({ message: 'Forbidden' })
+            }
         })
     }
     finally {
